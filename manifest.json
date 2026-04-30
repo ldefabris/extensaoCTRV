@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Snippet Injector",
+  "version": "1.0",
+  "description": "Gerencia e injeta snippets de texto em campos de formulário.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["inject_styles.css"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
