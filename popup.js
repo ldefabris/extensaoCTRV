@@ -1,13 +1,12 @@
-import { getAuthToken, uploadToDrive, downloadFromDrive } from './sync.js';
-
 document.addEventListener('DOMContentLoaded', () => {
     const snippetInput = document.getElementById('snippetInput');
     const tagInput = document.getElementById('tagInput');
     const addBtn = document.getElementById('addBtn');
     const snippetList = document.getElementById('snippetList');
     const tagFilter = document.getElementById('tagFilter');
-    const syncBtn = document.getElementById('syncBtn');
-    const syncStatus = document.getElementById('syncStatus');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const fileInput = document.getElementById('fileInput');
 
     let allSnippets = [];
 
@@ -46,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function cleanupExpiredSnippets(snippets) {
         const now = Date.now();
-        return snippets.filter(s => {
+        return (snippets || []).filter(s => {
             if (typeof s === 'string') return true; 
             if (s.ttl === 0) return true; 
             return (now - s.createdAt) < (s.ttl * 1000);
@@ -185,38 +184,56 @@ document.addEventListener('DOMContentLoaded', () => {
         snippetList.appendChild(li);
     }
 
-    // Google Drive Sync
-    syncBtn.addEventListener('click', async () => {
-        syncStatus.textContent = 'Sincronizando...';
-        try {
-            const token = await getAuthToken();
-            
-            // 1. Baixar remotos
-            const remoteSnippets = await downloadFromDrive(token);
-            
-            if (remoteSnippets) {
-                // Mesclar (evitando duplicatas por ID)
-                const localIds = new Set(allSnippets.map(s => s.id));
-                const newFromRemote = remoteSnippets.filter(s => !localIds.has(s.id));
-                
-                if (newFromRemote.length > 0) {
-                    allSnippets = [...allSnippets, ...newFromRemote];
-                    await chrome.storage.local.set({ snippets: allSnippets });
-                    loadSnippets();
+    // EXPORTAR
+    exportBtn.addEventListener('click', () => {
+        const dataStr = JSON.stringify(allSnippets, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `snippets_backup_${new Date().toISOString().slice(0,10)}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+    });
+
+    // IMPORTAR
+    importBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const imported = JSON.parse(event.target.result);
+                if (Array.isArray(imported)) {
+                    // Mesclar sem duplicatas por ID
+                    const existingIds = new Set(allSnippets.map(s => s.id));
+                    const newSnippets = imported.filter(s => s.id && !existingIds.has(s.id));
+                    
+                    if (newSnippets.length > 0) {
+                        allSnippets = [...allSnippets, ...newSnippets];
+                        chrome.storage.local.set({ snippets: allSnippets }, () => {
+                            loadSnippets();
+                            alert(`${newSnippets.length} novos snippets importados!`);
+                        });
+                    } else {
+                        alert('Nenhum snippet novo encontrado no arquivo.');
+                    }
+                } else {
+                    alert('Formato de arquivo inválido.');
                 }
+            } catch (err) {
+                alert('Erro ao ler o arquivo JSON.');
             }
-            
-            // 2. Upload versão final
-            await uploadToDrive(token, allSnippets);
-            
-            syncStatus.textContent = 'Sincronizado';
-            setTimeout(() => { syncStatus.textContent = 'Nuvem OK'; }, 3000);
-            
-        } catch (error) {
-            console.error('Sync Error:', error);
-            syncStatus.textContent = 'Erro no Sync';
-            alert('Erro ao sincronizar. Verifique se o Client ID está configurado no manifest.json. Erro: ' + error.message);
-        }
+            fileInput.value = ''; // Reset para permitir re-importar o mesmo arquivo
+        };
+        reader.readAsText(file);
     });
 
     loadSnippets();
