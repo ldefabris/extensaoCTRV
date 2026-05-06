@@ -214,7 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (Array.isArray(imported)) {
                     // Mesclar sem duplicatas por ID
                     const existingIds = new Set(allSnippets.map(s => s.id));
-                    const newSnippets = imported.filter(s => s.id && !existingIds.has(s.id));
+                    const newSnippets = imported.filter(s => {
+                        const isNew = s.id && !existingIds.has(s.id);
+                        const hasValidText = s.text && typeof s.text === 'string';
+                        return isNew && hasValidText;
+                    });
                     
                     if (newSnippets.length > 0) {
                         allSnippets = [...allSnippets, ...newSnippets];

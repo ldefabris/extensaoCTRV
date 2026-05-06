@@ -11,15 +11,38 @@ function getValidSnippets(snippets) {
     });
 }
 
+function migrateSnippets(snippets) {
+    return (snippets || []).map(s => {
+        if (typeof s === 'string') {
+            return {
+                id: 'migrated_' + Math.random().toString(36).substr(2, 9),
+                text: s,
+                createdAt: Date.now(),
+                ttl: 0,
+                tags: []
+            };
+        }
+        return s;
+    });
+}
+
 // Carregar snippets inicialmente
 chrome.storage.local.get(['snippets'], (result) => {
-    allSnippets = getValidSnippets(result.snippets || []);
+    const rawSnippets = result.snippets || [];
+    const migrated = migrateSnippets(rawSnippets);
+    allSnippets = getValidSnippets(migrated);
+    
+    // Se houve migração, salva de volta (opcional, mas garante consistência)
+    if (JSON.stringify(rawSnippets) !== JSON.stringify(migrated)) {
+        chrome.storage.local.set({ snippets: migrated });
+    }
 });
 
 // Atualizar lista se houver mudança no storage
 chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === 'local' && changes.snippets) {
-        allSnippets = getValidSnippets(changes.snippets.newValue || []);
+        const migrated = migrateSnippets(changes.snippets.newValue || []);
+        allSnippets = getValidSnippets(migrated);
     }
 });
 
@@ -100,7 +123,18 @@ function renderMenu() {
         menu.appendChild(item);
     } else {
         filteredSnippets.forEach(snippet => {
-            const snippetText = typeof snippet === 'string' ? snippet : snippet.text;
+            let snippetText = '';
+            if (typeof snippet === 'string') {
+                snippetText = snippet;
+            } else if (snippet && typeof snippet.text === 'string') {
+                snippetText = snippet.text;
+            } else if (snippet && snippet.text) {
+                // Caso snippet.text seja algo inesperado, converte para string
+                snippetText = String(snippet.text);
+            } else {
+                snippetText = 'Snippet sem conteúdo';
+            }
+
             const item = document.createElement('div');
             item.className = 'snippet-injector-menu-item';
             
