@@ -140,17 +140,26 @@ function openMenu(button, inputElement) {
     menu.style.display = 'block';
 }
 
+// ==========================================
+// Módulo: Injeção de Botões
+// ==========================================
+
+const textInputsSelector = 'textarea, input[type="text"], input[type="search"], input[type="email"], input[type="url"], input:not([type]), [contenteditable="true"]';
 const activeButtons = new Map();
 
 function positionButton(inputElement, btn) {
     const rect = inputElement.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0 || window.getComputedStyle(inputElement).display === 'none') {
+    
+    // Verificação de visibilidade mais robusta
+    const style = window.getComputedStyle(inputElement);
+    if (rect.width === 0 || rect.height === 0 || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
         btn.style.display = 'none';
         return;
     }
+    
     btn.style.display = 'flex';
     btn.style.top = `${rect.top + window.scrollY + 5}px`;
-    btn.style.left = `${rect.right + window.scrollX - 30}px`;
+    btn.style.left = `${rect.right + window.scrollX - 35}px`;
 }
 
 function injectButton(inputElement) {
@@ -163,7 +172,11 @@ function injectButton(inputElement) {
     btn.title = 'Injetar Snippet';
     
     document.body.appendChild(btn);
+    
     positionButton(inputElement, btn);
+    setTimeout(() => positionButton(inputElement, btn), 100);
+    setTimeout(() => positionButton(inputElement, btn), 500);
+
     activeButtons.set(inputElement, btn);
 
     const resizeObserver = new ResizeObserver(() => {
@@ -178,6 +191,45 @@ function injectButton(inputElement) {
     });
 }
 
+function findInputsInShadows(root) {
+    if (root.querySelectorAll) {
+        root.querySelectorAll(textInputsSelector).forEach(injectButton);
+    }
+    
+    const all = root.querySelectorAll ? root.querySelectorAll('*') : [];
+    all.forEach(el => {
+        if (el.shadowRoot) {
+            findInputsInShadows(el.shadowRoot);
+        }
+    });
+}
+
+function processNode(node) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.matches && node.matches(textInputsSelector)) injectButton(node);
+        node.querySelectorAll(textInputsSelector).forEach(injectButton);
+        
+        if (node.shadowRoot) findInputsInShadows(node.shadowRoot);
+        node.querySelectorAll('*').forEach(el => {
+            if (el.shadowRoot) findInputsInShadows(el.shadowRoot);
+        });
+    }
+}
+
+function init() {
+    findInputsInShadows(document);
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => mutation.addedNodes.forEach(processNode));
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+if (document.body) {
+    init();
+} else {
+    document.addEventListener('DOMContentLoaded', init);
+}
+
 window.addEventListener('scroll', () => {
     activeButtons.forEach((btn, inputElement) => positionButton(inputElement, btn));
     if (menu.style.display === 'block') menu.style.display = 'none';
@@ -186,22 +238,6 @@ window.addEventListener('scroll', () => {
 window.addEventListener('resize', () => {
     activeButtons.forEach((btn, inputElement) => positionButton(inputElement, btn));
 });
-
-const textInputsSelector = 'textarea, input[type="text"], input[type="search"], input[type="email"], input[type="url"], input:not([type]), [contenteditable="true"]';
-
-function processNode(node) {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-        if (node.matches && node.matches(textInputsSelector)) injectButton(node);
-        node.querySelectorAll(textInputsSelector).forEach(injectButton);
-    }
-}
-
-document.querySelectorAll(textInputsSelector).forEach(injectButton);
-
-const observer = new MutationObserver((mutations) => {
-    mutations.forEach(mutation => mutation.addedNodes.forEach(processNode));
-});
-observer.observe(document.body, { childList: true, subtree: true });
 
 // ==========================================
 // Módulo: Calculadora de Ponto
