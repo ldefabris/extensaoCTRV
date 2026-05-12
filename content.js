@@ -168,10 +168,35 @@ function openMenu(button, inputElement) {
     currentTargetInput = inputElement;
     renderMenu();
 
-    const rect = button.getBoundingClientRect();
-    menu.style.top = `${rect.bottom + window.scrollY + 5}px`;
-    menu.style.left = `${rect.left + window.scrollX}px`;
+    // Show menu invisibly to calculate its dimensions
+    menu.style.visibility = 'hidden';
     menu.style.display = 'block';
+
+    const rect = button.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+
+    let topPos = rect.bottom + window.scrollY + 5;
+    let leftPos = rect.left + window.scrollX;
+
+    // Boundary detection - Vertical
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < menuRect.height + 10 && rect.top > menuRect.height) {
+        // If not enough space below, but enough above, position above the button
+        topPos = rect.top + window.scrollY - menuRect.height - 5;
+    }
+
+    // Boundary detection - Horizontal
+    const spaceRight = window.innerWidth - rect.left;
+    if (spaceRight < menuRect.width + 10) {
+        // If not enough space to the right, shift it left (aligning right edges roughly)
+        leftPos = rect.right + window.scrollX - menuRect.width;
+        // Ensure it doesn't go off the left side
+        if (leftPos < window.scrollX) leftPos = window.scrollX + 5;
+    }
+
+    menu.style.top = `${topPos}px`;
+    menu.style.left = `${leftPos}px`;
+    menu.style.visibility = 'visible';
 }
 
 // ==========================================
@@ -193,7 +218,7 @@ function positionButton(inputElement, btn) {
     
     btn.style.display = 'flex';
     btn.style.top = `${rect.top + window.scrollY + 5}px`;
-    btn.style.left = `${rect.right + window.scrollX - 35}px`;
+    btn.style.left = `${rect.right + window.scrollX - 25}px`;
 }
 
 function injectButton(inputElement) {
