@@ -37,6 +37,10 @@ Uma extensão poderosa para navegadores baseados em Chromium (Chrome, Opera, Edg
 4.  Clique em **Carregar sem compactação** (Load unpacked).
 5.  Selecione a pasta onde os arquivos do projeto estão salvos.
 6.  Pronto! O ícone da extensão aparecerá na sua barra de ferramentas.
+Prints da ferramenta // Case de uso
+![](sample.png)
+e
+![](sample2.png)
 
 ---
 Desenvolvido para máxima produtividade. 💡
