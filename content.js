@@ -51,6 +51,13 @@ const menu = document.createElement('div');
 menu.className = 'snippet-injector-menu';
 document.body.appendChild(menu);
 
+// Previne que cliques e scroll no menu interajam com os elementos da página (ex: WhatsApp Web)
+['mousedown', 'mouseup', 'click', 'wheel', 'keydown', 'keyup'].forEach(eventName => {
+    menu.addEventListener(eventName, (e) => {
+        e.stopPropagation();
+    });
+});
+
 let currentTargetInput = null;
 
 // Fechar menu ao clicar fora
@@ -289,7 +296,10 @@ if (document.body) {
     document.addEventListener('DOMContentLoaded', init);
 }
 
-window.addEventListener('scroll', () => {
+window.addEventListener('scroll', (e) => {
+    // Se o scroll foi originado dentro do nosso menu, não faça nada
+    if (e.target === menu || menu.contains(e.target)) return;
+
     activeButtons.forEach((btn, inputElement) => positionButton(inputElement, btn));
     if (menu.style.display === 'block') menu.style.display = 'none';
 }, true);
