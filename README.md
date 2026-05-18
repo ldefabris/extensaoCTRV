@@ -1,6 +1,6 @@
 # Snippet Injector Pro 🚀
 
-Uma extensão poderosa para navegadores baseados em Chromium (Chrome, Opera, Edge) projetada para gerenciar, organizar e injetar snippets de texto em qualquer campo de formulário da web, além de oferecer ferramentas de produtividade visual.
+Uma extensão poderosa para navegadores baseados em Chromium (Chrome, Opera, Edge) projetada para gerenciar, organizar e injetar snippets de texto em qualquer campo de formulário da web, ou seja um complemento para a gestão de área de transferência, permitindo controlar múltiplas linhas a serem coladas em campos do tipo texto pelo nagegador, além de oferecer ferramentas de produtividade visual.
 
 ## ✨ Funcionalidades Principais
 
