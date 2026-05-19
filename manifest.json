@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Snippet Injector Pro",
-  "version": "4.1",
+  "version": "4.3",
   "description": "Gerencia e injeta snippets com expiração, tags e importação/exportação local.",
   "permissions": [
     "storage",
     "activeTab",
     "scripting",
     "alarms",
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "webNavigation"
   ],
   "host_permissions": [
     "<all_urls>"
