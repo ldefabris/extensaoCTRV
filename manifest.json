@@ -1,13 +1,17 @@
 {
   "manifest_version": 3,
   "name": "Snippet Injector Pro",
-  "version": "1.2",
+  "version": "4.1",
   "description": "Gerencia e injeta snippets com expiração, tags e importação/exportação local.",
   "permissions": [
     "storage",
     "activeTab",
     "scripting",
-    "alarms"
+    "alarms",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html"
@@ -21,6 +25,11 @@
       "css": ["inject_styles.css"],
       "js": ["content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["inject_ua.js"],
+      "run_at": "document_start"
     }
   ]
 }

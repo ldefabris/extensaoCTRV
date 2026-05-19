@@ -232,11 +232,52 @@
             color: var(--success);
             background: #ecfdf5;
         }
+        .styled-select {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            background: var(--card);
+            color: var(--text);
+            width: 100%;
+        }
+        .styled-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
     </style>
 </head>
 <body>
     <h3>Snippet Injector Pro</h3>
     
+    <div class="ua-section" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+        <span class="section-label" style="display: flex; justify-content: space-between;">
+            <span>Spoofar Navegador (User-Agent)</span>
+            <span id="uaStatusIndicator" style="color: var(--text-light);">⚪ Padrão</span>
+        </span>
+        <div class="input-group" style="gap: 8px; margin-bottom: 0;">
+            <select id="osSelect" class="styled-select">
+                <option value="windows">Windows 10/11</option>
+                <option value="ubuntu">Ubuntu Linux</option>
+                <option value="chromeos">Chrome OS</option>
+            </select>
+            <div style="display: flex; gap: 8px;">
+                <select id="browserSelect" class="styled-select" style="flex: 1;">
+                    <option value="chrome">Google Chrome</option>
+                    <option value="firefox">Mozilla Firefox</option>
+                    <option value="edge">Microsoft Edge</option>
+                </select>
+                <select id="versionSelect" class="styled-select" style="flex: 1;">
+                    <!-- Preenchido via JS -->
+                </select>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 5px;">
+                <button id="applyUABtn" class="action-btn" style="background-color: var(--primary); color: white; border: none;">Aplicar UA</button>
+                <button id="resetUABtn" class="action-btn" style="background-color: var(--danger); color: white; border: none; flex: 0.5;">Restaurar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="input-group">
         <span class="section-label">Novo Snippet</span>
         <div class="main-input-row">

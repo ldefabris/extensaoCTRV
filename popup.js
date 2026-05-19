@@ -8,6 +8,113 @@ document.addEventListener('DOMContentLoaded', () => {
     const importBtn = document.getElementById('importBtn');
     const fileInput = document.getElementById('fileInput');
 
+    // Elementos do User-Agent
+    const osSelect = document.getElementById('osSelect');
+    const browserSelect = document.getElementById('browserSelect');
+    const versionSelect = document.getElementById('versionSelect');
+    const applyUABtn = document.getElementById('applyUABtn');
+    const resetUABtn = document.getElementById('resetUABtn');
+    const uaStatusIndicator = document.getElementById('uaStatusIndicator');
+
+    // Configurações Hardcoded de Versões
+    const browserVersions = {
+        chrome: ['124', '123', '122', '121', '120'],
+        firefox: ['125', '124', '123', '122'],
+        edge: ['124', '123', '122', '121']
+    };
+
+    function populateVersions() {
+        const browser = browserSelect.value;
+        const versions = browserVersions[browser] || [];
+        versionSelect.innerHTML = '';
+        versions.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = `Versão ${v}`;
+            versionSelect.appendChild(opt);
+        });
+    }
+
+    browserSelect.addEventListener('change', populateVersions);
+    
+    // Inicializa as versões
+    populateVersions();
+
+    function updateUAStatusUI(isActive) {
+        if (isActive) {
+            uaStatusIndicator.textContent = '🟢 Ativo';
+            uaStatusIndicator.style.color = 'var(--success)';
+        } else {
+            uaStatusIndicator.textContent = '⚪ Padrão';
+            uaStatusIndicator.style.color = 'var(--text-light)';
+        }
+    }
+
+    function loadUAState() {
+        chrome.storage.local.get(['uaConfig'], (result) => {
+            if (result.uaConfig) {
+                osSelect.value = result.uaConfig.os || 'windows';
+                browserSelect.value = result.uaConfig.browser || 'chrome';
+                populateVersions();
+                if (result.uaConfig.version) {
+                    versionSelect.value = result.uaConfig.version;
+                }
+                updateUAStatusUI(result.uaConfig.active);
+            }
+        });
+    }
+
+    function buildUAString(os, browser, version) {
+        let osString = "Windows NT 10.0; Win64; x64"; 
+        if (os === 'ubuntu') {
+            osString = "X11; Ubuntu; Linux x86_64";
+        } else if (os === 'chromeos') {
+            osString = "X11; CrOS x86_64 14541.0.0";
+        }
+
+        if (browser === 'firefox') {
+            return `Mozilla/5.0 (${osString}; rv:${version}.0) Gecko/20100101 Firefox/${version}.0`;
+        } else if (browser === 'edge') {
+            return `Mozilla/5.0 (${osString}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${version}.0.0.0 Safari/537.36 Edg/${version}.0.0.0`;
+        } else {
+            // default chrome
+            return `Mozilla/5.0 (${osString}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${version}.0.0.0 Safari/537.36`;
+        }
+    }
+
+    applyUABtn.addEventListener('click', () => {
+        const config = {
+            os: osSelect.value,
+            browser: browserSelect.value,
+            version: versionSelect.value,
+            active: true,
+            uaString: buildUAString(osSelect.value, browserSelect.value, versionSelect.value)
+        };
+        chrome.storage.local.set({ uaConfig: config }, () => {
+            chrome.runtime.sendMessage({ action: 'setUA', config: config }, (response) => {
+                if (response && response.success) {
+                    updateUAStatusUI(true);
+                }
+            });
+        });
+    });
+
+    resetUABtn.addEventListener('click', () => {
+        chrome.storage.local.get(['uaConfig'], (result) => {
+            let config = result.uaConfig || {};
+            config.active = false;
+            chrome.storage.local.set({ uaConfig: config }, () => {
+                chrome.runtime.sendMessage({ action: 'resetUA' }, (response) => {
+                    if (response && response.success) {
+                        updateUAStatusUI(false);
+                    }
+                });
+            });
+        });
+    });
+
+    loadUAState();
+
     let allSnippets = [];
 
     function renderEmptyMessage() {

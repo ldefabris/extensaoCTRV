@@ -26,23 +26,40 @@ function migrateSnippets(snippets) {
     });
 }
 
-// Carregar snippets inicialmente
-chrome.storage.local.get(['snippets'], (result) => {
+let btnOffsetX = -25;
+let btnOffsetY = 5;
+
+// Carregar snippets e preferências de posicionamento inicialmente
+chrome.storage.local.get(['snippets', 'btnOffsetX', 'btnOffsetY'], (result) => {
     const rawSnippets = result.snippets || [];
     const migrated = migrateSnippets(rawSnippets);
     allSnippets = getValidSnippets(migrated);
     
-    // Se houve migração, salva de volta (opcional, mas garante consistência)
+    if (result.btnOffsetX !== undefined) btnOffsetX = result.btnOffsetX;
+    if (result.btnOffsetY !== undefined) btnOffsetY = result.btnOffsetY;
+    
+    // Se houve migração, salva de volta
     if (JSON.stringify(rawSnippets) !== JSON.stringify(migrated)) {
         chrome.storage.local.set({ snippets: migrated });
     }
 });
 
-// Atualizar lista se houver mudança no storage
+// Atualizar lista e preferências se houver mudança no storage
 chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'local' && changes.snippets) {
-        const migrated = migrateSnippets(changes.snippets.newValue || []);
-        allSnippets = getValidSnippets(migrated);
+    if (namespace === 'local') {
+        if (changes.snippets) {
+            const migrated = migrateSnippets(changes.snippets.newValue || []);
+            allSnippets = getValidSnippets(migrated);
+        }
+        if (changes.btnOffsetX || changes.btnOffsetY) {
+            if (changes.btnOffsetX) btnOffsetX = changes.btnOffsetX.newValue;
+            if (changes.btnOffsetY) btnOffsetY = changes.btnOffsetY.newValue;
+            activeButtons.forEach((btn, inputElement) => {
+                btn.dataset.offsetX = btnOffsetX;
+                btn.dataset.offsetY = btnOffsetY;
+                positionButton(inputElement, btn);
+            });
+        }
     }
 });
 
@@ -223,9 +240,13 @@ function positionButton(inputElement, btn) {
         return;
     }
     
+    // Usa as coordenadas salvas no dataset ou as globais
+    const offsetX = btn.dataset.offsetX !== undefined ? parseFloat(btn.dataset.offsetX) : btnOffsetX;
+    const offsetY = btn.dataset.offsetY !== undefined ? parseFloat(btn.dataset.offsetY) : btnOffsetY;
+    
     btn.style.display = 'flex';
-    btn.style.top = `${rect.top + window.scrollY + 5}px`;
-    btn.style.left = `${rect.right + window.scrollX - 25}px`;
+    btn.style.top = `${rect.top + window.scrollY + offsetY}px`;
+    btn.style.left = `${rect.right + window.scrollX + offsetX}px`;
 }
 
 function injectButton(inputElement) {
@@ -235,7 +256,11 @@ function injectButton(inputElement) {
     const btn = document.createElement('button');
     btn.className = 'snippet-injector-btn';
     btn.textContent = 'S';
-    btn.title = 'Injetar Snippet';
+    btn.title = 'Injetar Snippet (Arraste com o botão esquerdo para reposicionar)';
+    
+    // Configura o dataset inicial com o offset global atual
+    btn.dataset.offsetX = btnOffsetX;
+    btn.dataset.offsetY = btnOffsetY;
     
     document.body.appendChild(btn);
     
@@ -250,9 +275,80 @@ function injectButton(inputElement) {
     });
     resizeObserver.observe(inputElement);
 
+    // Lógica de arrastar e soltar (Drag and Drop)
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startOffsetX = -25;
+    let startOffsetY = 5;
+    const dragThreshold = 5; // pixels mínimos de movimento para considerar arraste
+    let hasMoved = false;
+
+    btn.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Apenas botão esquerdo
+        
+        isDragging = true;
+        hasMoved = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        startOffsetX = parseFloat(btn.dataset.offsetX || btnOffsetX);
+        startOffsetY = parseFloat(btn.dataset.offsetY || btnOffsetY);
+        
+        btn.style.cursor = 'grabbing';
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const onMouseMove = (moveEvent) => {
+            if (!isDragging) return;
+            
+            const deltaX = moveEvent.clientX - startX;
+            const deltaY = moveEvent.clientY - startY;
+            
+            if (Math.abs(deltaX) > dragThreshold || Math.abs(deltaY) > dragThreshold) {
+                hasMoved = true;
+            }
+            
+            if (hasMoved) {
+                btn.dataset.wasDragged = 'true';
+                btn.dataset.offsetX = startOffsetX + deltaX;
+                btn.dataset.offsetY = startOffsetY + deltaY;
+                positionButton(inputElement, btn);
+            }
+        };
+        
+        const onMouseUp = () => {
+            isDragging = false;
+            btn.style.cursor = '';
+            
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            
+            if (hasMoved) {
+                const finalOffsetX = parseFloat(btn.dataset.offsetX);
+                const finalOffsetY = parseFloat(btn.dataset.offsetY);
+                
+                // Salva a nova preferência global no storage
+                chrome.storage.local.set({ 
+                    btnOffsetX: finalOffsetX, 
+                    btnOffsetY: finalOffsetY 
+                });
+            }
+        };
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+
     btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        
+        if (btn.dataset.wasDragged === 'true') {
+            btn.dataset.wasDragged = 'false';
+            return; // Ignora o clique se veio de um arraste
+        }
+        
         openMenu(btn, inputElement);
     });
 }
