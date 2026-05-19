@@ -36,6 +36,24 @@ git clone https://github.com/ldefabris/extensaoCTRV.git
 *   **Gestão de Área de Transferência Avançada**: Controle múltiplas linhas de textos recorrentes para colagem sem perder o histórico do seu clipboard nativo do sistema.
 *   **Assistente de Ponto Integrado (Timesheet)**: Monitora e calcula automaticamente o déficit de horas em cartões de ponto de sistemas compatíveis, exibindo um alerta visual em vermelho indicando o tempo exato restante para completar a jornada diária de 8 horas.
 *   **Interface Premium**: Design moderno baseado em variáveis HSL, cantos arredondados suavizados, barra de rolagem inteligente customizada com isolamento de eventos (evita conflitos com sites como WhatsApp Web e telas de login complexas) e suporte a micro-animações.
+*   **User-Agent Switcher (Bypass de Bloqueio)**: Permite simular navegadores e sistemas operacionais recentes para acessar sites modernos (como Google Workspace) em dispositivos antigos, contornando bloqueios artificiais por software.
+
+---
+
+## 🌐 User-Agent Switcher & Bypass de Hardware EOL
+
+Muitas vezes, dispositivos antigos — como **Chromebooks que atingiram o fim da vida útil de suporte (EOL)** — são impedidos de acessar serviços como Google Docs, Sheets ou Gmail. Na grande maioria das vezes, o hardware e o motor do navegador ainda são plenamente capazes de rodar a aplicação, mas um **alerta ou barreira de software** é ativado para forçar ou encorajar a troca do aparelho.
+
+Esta funcionalidade da extensão realiza um bypass duplo para contornar essa obsolescência programada:
+
+### O que é o User-Agent?
+O *User-Agent* é a "carteira de identidade" que o navegador envia aos servidores web informando o sistema operacional, o navegador e a versão do software em uso.
+
+### Como o Bypass funciona:
+1. **Modificação na Rede (HTTP Headers):** Usando a API `declarativeNetRequest` (Manifest V3), a extensão intercepta todas as requisições enviadas ao servidor e sobrescreve o cabeçalho `User-Agent` real por um moderno (ex: Google Chrome v124).
+2. **Modificação no Client-Side (DOM Spoofing):** Injeta um script no momento exato `document_start` (antes de qualquer código da página rodar) para redefinir as propriedades Javascript `navigator.userAgent`, `navigator.appVersion` e as marcas dentro de `navigator.userAgentData`. Isso engana totalmente as checagens locais feitas por scripts pesados como os do ecossistema Google Workspace.
+
+Dessa forma, a extensão "dá uma sobrevida" a Chromebooks e computadores antigos que de outra forma seriam descartados por pura limitação comercial de software.
 
 ---
 
